@@ -1,0 +1,374 @@
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    font-family: 'Outrun Future', sans-serif;
+    font-size: 2.5em;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.subtitle {
+    font-family: Arial, sans-serif;
+    font-size: 1.2em;
+    color: #7f8c8d;
+    text-align: center;
+    margin-top: -5px;
+    margin-bottom: 30px;
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+h2 {
+    font-size: 2em;
+    color: #3498db;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.roster, .positions, .summary {
+    margin-bottom: 40px;
+}
+
+.roster {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+#player-dropdown {
+    width: 200px;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-size: 16px;
+    border: 2px solid #3498db;
+    border-radius: 5px;
+    background-color: #fff;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#player-dropdown:hover, #player-dropdown:focus {
+    border-color: #2980b9;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+}
+
+#player-dropdown option {
+    padding: 10px;
+}
+
+.action-text {
+    text-align: center;
+    margin-top: 10px;
+    font-style: italic;
+    color: #7f8c8d;
+}
+
+.positions {
+    text-align: center;
+}
+
+.positions h2 {
+    margin-bottom: 30px;
+}
+
+.positions-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 10px;
+    flex-wrap: nowrap;
+}
+
+.position {
+    flex: 1;
+    min-width: 0;
+    background-color: #ecf0f1;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.position-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.position-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.position-minutes {
+    font-size: 0.9em;
+    color: #7f8c8d;
+}
+
+.slot {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.empty-slot {
+    background-color: #f7f7f7;
+    color: #95a5a6;
+}
+
+.filled-slot {
+    background-color: #e8f6fd;
+}
+
+.slot input[type="range"] {
+    width: 100%;
+    margin: 10px 0;
+}
+
+.minutes-display {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.position .minutes-warning {
+    color: #e74c3c;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+#summary {
+    background-color: #ecf0f1;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    gap: 20px;
+}
+
+.player-summary {
+    flex: 1 1 150px;
+    max-width: 200px;
+    margin: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.player-summary span {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #2c3e50;
+    text-align: center;
+}
+
+.player-summary canvas {
+    width: 100%;
+    height: auto;
+    max-width: 150px;
+    max-height: 150px;
+}
+
+#total-minutes {
+    font-size: 1.5em;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 30px;
+    color: #2c3e50;
+}
+
+#summary .warning {
+    width: 100%;
+    color: #e74c3c;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 20px;
+}
+
+#summary .placeholder {
+    width: 100%;
+    text-align: center;
+    color: #95a5a6;
+    font-style: italic;
+}
+
+button {
+    background-color: #2ecc71;
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #27ae60;
+}
+
+.remove-slot {
+    background-color: #e74c3c;
+    margin-top: 10px;
+}
+
+.remove-slot:hover {
+    background-color: #c0392b;
+}
+
+.add-slot {
+    font-size: 0.9em;
+    padding: 5px 10px;
+}
+
+#position-legend {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 0 10px;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    margin-right: 5px;
+    border-radius: 50%;
+}
+
+.legend-label {
+    font-size: 0.9em;
+    color: #2c3e50;
+}
+
+select {
+    width: 200px;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-size: 16px;
+    border: 2px solid #3498db;
+    border-radius: 5px;
+    background-color: #fff;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+select:hover, select:focus {
+    border-color: #2980b9;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+}
+
+.actions {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.actions button {
+    margin: 0 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    color: #fff;
+    background-color: #3498db;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.actions button:hover {
+    background-color: #2980b9;
+}
+
+select:disabled {
+    background-color: #f0f0f0;
+    color: #888;
+    cursor: not-allowed;
+}
+
+footer {
+    text-align: center;
+    padding: 20px 0;
+    background-color: #f0f0f0;
+    border-top: 1px solid #ddd;
+    margin-top: 30px;
+}
+
+footer p {
+    margin: 0;
+    color: #666;
+}
+
+@media (max-width: 768px) {
+    .positions-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .position {
+        width: 90%;
+        max-width: 300px;
+    }
+
+    .player-summary {
+        width: 100%;
+    }
+}
+
+@media (max-width: 1200px) {
+    .positions-container {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .position {
+        flex: 0 0 calc(33.33% - 20px);
+    }
+}
+
+@media (max-width: 768px) {
+    .position {
+        flex: 0 0 calc(50% - 20px);
+    }
+}
+
+@media (max-width: 480px) {
+    .position {
+        flex: 0 0 100%;
+    }
+}

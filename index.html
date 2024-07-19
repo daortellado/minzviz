@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>minzVIZ - Basketball Minutes Distribution Visualizer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'Outrun Future';
+            src: url('fonts/Outrun future.otf') format('opentype');
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>minzVIZ</h1>
+        <h2 id="the-basketball-minutes-distribution-visualizer" class="subtitle">The Basketball Minutes Distribution Visualizer</h2>
+
+        <div class="roster">
+            <h2>Roster</h2>
+            <select id="team-dropdown">
+                <option value="">Select a team</option>
+            </select>
+            <select id="player-dropdown">
+                <option value="">Select a player</option>
+                <option value="Player A">Player A</option>
+                <option value="Player B">Player B</option>
+                <option value="Player C">Player C</option>
+                <option value="Player D">Player D</option>
+                <option value="Player E">Player E</option>
+                <option value="Player F">Player F</option>
+                <option value="Player G">Player G</option>
+                <option value="Player H">Player H</option>
+                <option value="Player I">Player I</option>
+                <option value="Player J">Player J</option>
+                <option value="Player K">Player K</option>
+                <option value="Player L">Player L</option>
+                <option value="Player M">Player M</option>
+                <option value="Player N">Player N</option>
+            </select>
+            <div id="action-text" class="action-text">Select a player from the dropdown, then click on an empty slot to add them.</div>
+        </div>
+
+        <div class="positions">
+            <h2>Positions</h2>
+            <div id="total-minutes"></div>
+            <div class="positions-container"></div>
+        </div>
+        <div class="actions">
+            <button id="clear-lineup">Clear Lineup</button>
+            <button id="export-image">Export as Image</button>
+            <button id="generate-link">Generate Shareable Link</button>
+        </div>
+        <div class="summary">
+            <h2>Summary</h2>
+            <div id="position-legend"></div>
+            <div id="summary"></div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+<footer>
+    <p>&copy; Kenavoga 2024</p>
+</footer>
+</body>
+</html>
