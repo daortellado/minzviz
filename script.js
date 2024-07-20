@@ -18,39 +18,18 @@ $(document).ready(function() {
             updateTeamDropdown();
             return;
         }
-
-        fetch('https://www.balldontlie.io/api/v1/teams')
+    
+        fetch('https://www.minzviz.com/nba_teams.json')
             .then(response => response.json())
             .then(data => {
-                const teams = data.data;
-                
-                teams.forEach(team => {
-                    nbaTeams[team.full_name] = [];
-                });
-
-                updateTeamDropdown();
-                fetchPlayersForTeams();
-            })
-            .catch(error => console.error('Error fetching teams:', error));
-    }
-
-    function fetchPlayersForTeams() {
-        const allPlayerRequests = Object.keys(nbaTeams).map(teamName => {
-            return fetch(`https://www.balldontlie.io/api/v1/players?per_page=100&search=${teamName}`)
-                .then(response => response.json())
-                .then(data => {
-                    const players = data.data.filter(player => player.team.full_name === teamName);
-                    nbaTeams[teamName] = players.map(player => `${player.first_name} ${player.last_name}`);
-                });
-        });
-
-        Promise.all(allPlayerRequests)
-            .then(() => {
-                console.log('All rosters fetched:', nbaTeams);
+                nbaTeams = data;
                 setCachedData('nbaTeams', nbaTeams);
-                updateTeamDropdown(); // Update dropdown after fetching players
+                updateTeamDropdown();
             })
-            .catch(error => console.error('Error fetching players:', error));
+            .catch(error => {
+                console.error('Error fetching teams:', error);
+                alert('Failed to fetch teams. Please try again later.');
+            });
     }
 
     function getCachedData(key) {
