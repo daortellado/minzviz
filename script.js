@@ -19,7 +19,7 @@ $(document).ready(function() {
             return;
         }
     
-        fetch('https://www.minzviz.com/nba_teams.json')
+        fetch('nba_teams.json')
             .then(response => response.json())
             .then(data => {
                 nbaTeams = data;
