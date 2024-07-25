@@ -28,8 +28,17 @@
             <select id="player-dropdown">
                 <option value="">Select a player</option>
             </select>
+            <button id="add-custom-player" disabled>Add Custom Player</button>
             <div id="action-text" class="action-text">Select a team and a player, then click on an empty slot to add them.</div>
         </div>
+        <div id="custom-player-modal" class="modal">
+            <div class="modal-content">
+              <h3>Add Custom Player</h3>
+              <input type="text" id="custom-player-name" placeholder="Enter player name">
+              <button id="save-custom-player">Add Player</button>
+              <button id="close-modal">Cancel</button>
+            </div>
+          </div>
 
         <div class="positions">
             <h2>Positions</h2>

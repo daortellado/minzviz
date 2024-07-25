@@ -9,6 +9,7 @@ $(document).ready(function() {
 
     let nbaTeams = {};
     let currentTeam = null;
+    let customPlayers = {};
     const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
     function fetchNBATeams() {
@@ -346,6 +347,15 @@ $(document).ready(function() {
             $firstSlot.data('minutes', 0); // Reset minutes data
         });
         updateSummary();
+        updateAddCustomPlayerButton();
+    }
+
+    function addCustomPlayer(teamName, playerName) {
+        if (!customPlayers[teamName]) {
+            customPlayers[teamName] = [];
+        }
+        customPlayers[teamName].push(playerName);
+        updatePlayerDropdown(teamName);
     }
 
     function updatePlayerDropdown(team) {
@@ -362,12 +372,29 @@ $(document).ready(function() {
                     text: player
                 }));
             });
+
+            // Add custom players
+            if (customPlayers[team]) {
+                customPlayers[team].forEach(player => {
+                    $playerDropdown.append($('<option>', {
+                        value: player,
+                        text: player + ' (Custom)'
+                    }));
+                });
+            }
+
             $('#action-text').text(`Select a player from ${team}, then click on an empty slot to add them.`);
             $playerDropdown.prop('disabled', false);
         } else {
             $('#action-text').text('Select a team and a player, then click on an empty slot to add them.');
             $playerDropdown.prop('disabled', true);
         }
+
+        updateAddCustomPlayerButton();
+    }
+
+    function updateAddCustomPlayerButton() {
+        $('#add-custom-player').prop('disabled', !currentTeam);
     }
 
     $(document).on('change', '#team-dropdown', function() {
@@ -390,8 +417,11 @@ $(document).ready(function() {
         
         // Handle the case when no team is selected
         if (!selectedTeam) {
+            currentTeam = null;
             updatePlayerDropdown(null);
         }
+
+        updateAddCustomPlayerButton();
     });
 
     $('#clear-lineup').on('click', function() {
@@ -404,6 +434,7 @@ $(document).ready(function() {
                 text: "Select a player"
             }));
             $('#action-text').text('Select a team and a player, then click on an empty slot to add them.');
+            updateAddCustomPlayerButton();
         }
     });
 
@@ -520,7 +551,8 @@ $(document).ready(function() {
     function generateShareableLink() {
         const state = {
             team: currentTeam,
-            positions: {}
+            positions: {},
+            customPlayers: customPlayers[currentTeam] || []
         };
     
         $('.position').each(function() {
@@ -539,7 +571,6 @@ $(document).ready(function() {
         const encodedState = encodeURIComponent(stateString);
         const shareableLink = `${window.location.origin}${window.location.pathname}?state=${encodedState}`;
         
-        // Copy to clipboard
         navigator.clipboard.writeText(shareableLink).then(function() {
             alert("Shareable link has been copied to your clipboard!");
         }, function(err) {
@@ -556,9 +587,14 @@ $(document).ready(function() {
         const stateParam = urlParams.get('state');
         if (stateParam) {
             const state = JSON.parse(decodeURIComponent(stateParam));
-            // Load the state into your application
             currentTeam = state.team;
             $('#team-dropdown').val(currentTeam);
+
+            // Load custom players
+            if (state.customPlayers) {
+                customPlayers[currentTeam] = state.customPlayers;
+            }
+
             updatePlayerDropdown(currentTeam);
 
             clearLineup(); // Clear existing lineup before loading new state
@@ -580,8 +616,29 @@ $(document).ready(function() {
             });
 
             updateSummary();
+            updateAddCustomPlayerButton();
         }
     }
+
+    // Add custom player modal functionality
+    $('#add-custom-player').on('click', function() {
+        $('#custom-player-modal').css('display', 'block');
+    });
+
+    $('#close-modal').on('click', function() {
+        $('#custom-player-modal').css('display', 'none');
+    });
+
+    $('#save-custom-player').on('click', function() {
+        const customPlayerName = $('#custom-player-name').val().trim();
+        if (customPlayerName && currentTeam) {
+            addCustomPlayer(currentTeam, customPlayerName);
+            $('#custom-player-modal').css('display', 'none');
+            $('#custom-player-name').val('');
+        } else {
+            alert('Please enter a player name and select a team.');
+        }
+    });
 
     initPositions();
     fetchNBATeams();  // Start by fetching teams and players
