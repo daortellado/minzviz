@@ -510,12 +510,12 @@ $(document).ready(function() {
             const summaryContainer = document.createElement('div');
             summaryContainer.style.display = 'flex';
             summaryContainer.style.flexWrap = 'wrap';
-            summaryContainer.style.justifyContent = 'space-between';
+            summaryContainer.style.justifyContent = 'center';
             chartImages.forEach(({img, player}) => {
                 summaryContainer.innerHTML += `
-                    <div style="width: calc(20% - 20px); margin: 10px; text-align: center;">
+                    <div style="margin: 15px; text-align: center;">
                         <p style="margin: 5px 0;">${player}</p>
-                        <img src="${img}" style="width: 100%; max-width: 150px; height: auto;">
+                        <img src="${img}" width="150" height="150">
                     </div>
                 `;
             });
@@ -531,7 +531,7 @@ $(document).ready(function() {
                 logging: false,
                 useCORS: true,
                 width: 1400,
-                height: exportContainer.offsetHeight,
+                height: exportContainer.offsetHeight + 100, // Add some extra height
                 onclone: function(clonedDoc) {
                     const clonedContainer = clonedDoc.body.querySelector('div');
                     clonedContainer.style.width = '1400px';
