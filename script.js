@@ -185,36 +185,25 @@ $(document).ready(function() {
     function createSliderSVG(value, max) {
         const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.setAttribute("width", "100");
-        svg.setAttribute("height", "20");
-    
+        svg.setAttribute("height", "10");
+
         const background = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         background.setAttribute("width", "100");
         background.setAttribute("height", "10");
-        background.setAttribute("fill", "#ddd");
+        background.setAttribute("fill", "#ecf0f1");
         background.setAttribute("rx", "5");
         background.setAttribute("ry", "5");
-        background.setAttribute("y", "5");
-    
+
         const fill = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         fill.setAttribute("width", (value / max * 100).toString());
         fill.setAttribute("height", "10");
-        fill.setAttribute("fill", "#4CAF50");
+        fill.setAttribute("fill", "#3498db");
         fill.setAttribute("rx", "5");
         fill.setAttribute("ry", "5");
-        fill.setAttribute("y", "5");
-    
-        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        text.setAttribute("x", "50");
-        text.setAttribute("y", "15");
-        text.setAttribute("text-anchor", "middle");
-        text.setAttribute("fill", "black");
-        text.setAttribute("font-size", "12");
-        text.textContent = `${value} mins`;
-    
+
         svg.appendChild(background);
         svg.appendChild(fill);
-        svg.appendChild(text);
-    
+
         return svg;
     }
 
@@ -486,23 +475,54 @@ $(document).ready(function() {
                 positionClone.style.padding = '10px';
                 positionClone.style.boxSizing = 'border-box';
                 positionClone.style.border = '1px solid #ccc';
+                positionClone.style.borderRadius = '8px';
+                positionClone.style.backgroundColor = '#f8f9fa';
     
                 const positionHeader = document.createElement('h3');
                 positionHeader.textContent = $(this).find('h3').text();
+                positionHeader.style.marginBottom = '15px';
+                positionHeader.style.color = '#2c3e50';
+                positionHeader.style.borderBottom = '2px solid #3498db';
+                positionHeader.style.paddingBottom = '5px';
                 positionClone.appendChild(positionHeader);
     
                 $(this).find('.slot').each(function() {
                     const slotClone = document.createElement('div');
-                    slotClone.style.marginBottom = '10px';
+                    slotClone.style.marginBottom = '15px';
+                    slotClone.style.padding = '8px';
+                    slotClone.style.backgroundColor = 'white';
+                    slotClone.style.borderRadius = '4px';
+                    slotClone.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
                     
                     const playerName = $(this).find('.player').data('name');
                     if (playerName) {
-                        slotClone.textContent = playerName + ': ';
+                        const nameSpan = document.createElement('span');
+                        nameSpan.textContent = playerName;
+                        nameSpan.style.fontWeight = 'bold';
+                        nameSpan.style.color = '#34495e';
+                        slotClone.appendChild(nameSpan);
+    
                         const minutes = $(this).data('minutes');
+                        const minutesContainer = document.createElement('div');
+                        minutesContainer.style.marginTop = '5px';
+                        minutesContainer.style.display = 'flex';
+                        minutesContainer.style.alignItems = 'center';
+    
                         const svg = createSliderSVG(minutes, 48);
-                        slotClone.appendChild(svg);
+                        svg.style.marginRight = '10px';
+                        minutesContainer.appendChild(svg);
+    
+                        const minutesText = document.createElement('span');
+                        minutesText.textContent = `${minutes} mins`;
+                        minutesText.style.fontWeight = 'bold';
+                        minutesText.style.color = '#2980b9';
+                        minutesContainer.appendChild(minutesText);
+    
+                        slotClone.appendChild(minutesContainer);
                     } else {
                         slotClone.textContent = 'Empty Slot';
+                        slotClone.style.color = '#95a5a6';
+                        slotClone.style.fontStyle = 'italic';
                     }
     
                     positionClone.appendChild(slotClone);
@@ -544,7 +564,7 @@ $(document).ready(function() {
                 logging: false,
                 useCORS: true,
                 width: 1400,
-                height: exportContainer.offsetHeight + 200,
+                height: exportContainer.offsetHeight,
                 onclone: function(clonedDoc) {
                     const clonedContainer = clonedDoc.body.querySelector('div');
                     clonedContainer.style.width = '1400px';
