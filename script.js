@@ -456,12 +456,10 @@ $(document).ready(function() {
             });
     
             const exportContainer = document.createElement('div');
-            exportContainer.style.padding = '50px';
+            exportContainer.className = 'export-container';
             exportContainer.style.backgroundColor = 'white';
-            exportContainer.style.width = '1400px';
             exportContainer.style.position = 'absolute';
             exportContainer.style.left = '-9999px';
-            exportContainer.style.boxSizing = 'border-box';
     
             // Add title
             exportContainer.innerHTML += `<h1 style="text-align: center; margin-bottom: 15px;">${document.querySelector('h1').textContent}</h1>`;
@@ -530,11 +528,12 @@ $(document).ready(function() {
                 scale: 2,
                 logging: false,
                 useCORS: true,
-                width: 1400,
+                width: exportContainer.offsetWidth,
                 height: exportContainer.offsetHeight,
                 onclone: function(clonedDoc) {
-                    const clonedContainer = clonedDoc.body.querySelector('div');
-                    clonedContainer.style.width = '1400px';
+                    const clonedContainer = clonedDoc.body.querySelector('.export-container');
+                    clonedContainer.style.position = 'static';
+                    clonedContainer.style.left = 'auto';
                 }
             }).then(canvas => {
                 const link = document.createElement('a');
