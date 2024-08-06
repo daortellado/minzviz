@@ -471,34 +471,47 @@ $(document).ready(function() {
             exportContainer.innerHTML += `<h2 style="text-align: center; margin-bottom: 15px; color: #3498db;">${teamName}</h2>`;
     
             // Add positions
-            const positionsClone = document.querySelector('.positions-container').cloneNode(true);
-            positionsClone.style.display = 'flex';
-            positionsClone.style.justifyContent = 'space-between';
-            positionsClone.style.flexWrap = 'nowrap';
-            positionsClone.style.marginBottom = '25px';
-            positionsClone.querySelectorAll('.position').forEach(position => {
-                position.style.width = '260px';
-                position.style.flexShrink = '0';
-                position.style.margin = '0 5px';
-                position.style.padding = '10px';
-                position.style.boxSizing = 'border-box';
-                position.style.border = '1px solid #ccc';
+            const positionsContainer = document.createElement('div');
+            positionsContainer.style.display = 'flex';
+            positionsContainer.style.justifyContent = 'space-between';
+            positionsContainer.style.flexWrap = 'nowrap';
+            positionsContainer.style.marginBottom = '25px';
+            positionsContainer.style.width = '100%';
+    
+            $('.position').each(function() {
+                const positionClone = document.createElement('div');
+                positionClone.style.width = 'calc(20% - 10px)';
+                positionClone.style.flexShrink = '0';
+                positionClone.style.margin = '0 5px';
+                positionClone.style.padding = '10px';
+                positionClone.style.boxSizing = 'border-box';
+                positionClone.style.border = '1px solid #ccc';
+    
+                const positionHeader = document.createElement('h3');
+                positionHeader.textContent = $(this).find('h3').text();
+                positionClone.appendChild(positionHeader);
+    
+                $(this).find('.slot').each(function() {
+                    const slotClone = document.createElement('div');
+                    slotClone.style.marginBottom = '10px';
+                    
+                    const playerName = $(this).find('.player').data('name');
+                    if (playerName) {
+                        slotClone.textContent = playerName + ': ';
+                        const minutes = $(this).data('minutes');
+                        const svg = createSliderSVG(minutes, 48);
+                        slotClone.appendChild(svg);
+                    } else {
+                        slotClone.textContent = 'Empty Slot';
+                    }
+    
+                    positionClone.appendChild(slotClone);
+                });
+    
+                positionsContainer.appendChild(positionClone);
             });
-            positionsClone.querySelectorAll('.add-slot, .remove-slot').forEach(el => el.remove());
-            positionsClone.querySelectorAll('.slot').forEach(slot => {
-                const slider = slot.querySelector('input[type="range"]');
-                const minutesDisplay = slot.querySelector('.minutes-display');
-                if (slider) {
-                    const value = slider.value;
-                    const max = slider.max;
-                    const svg = createSliderSVG(value, max);
-                    slot.replaceChild(svg, slider);
-                }
-                if (minutesDisplay) {
-                    minutesDisplay.remove();
-                }
-            });
-            exportContainer.appendChild(positionsClone);
+    
+            exportContainer.appendChild(positionsContainer);
     
             // Add legend
             const legendClone = document.querySelector('#position-legend').cloneNode(true);
@@ -531,7 +544,7 @@ $(document).ready(function() {
                 logging: false,
                 useCORS: true,
                 width: 1400,
-                height: exportContainer.offsetHeight + 100, // Add some extra height
+                height: exportContainer.offsetHeight + 200,
                 onclone: function(clonedDoc) {
                     const clonedContainer = clonedDoc.body.querySelector('div');
                     clonedContainer.style.width = '1400px';
