@@ -9,9 +9,44 @@ $(document).ready(function() {
 
     let nbaTeams = {};
     let currentTeam = null;
-    let customRosters = JSON.parse(localStorage.getItem('customRosters') || '{}');
+    let customPlayers = {};
     let currentRosterType = 'nba';
-    const CACHE_DURATION = 24 * 60 * 60 * 1000;
+    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+    // Add roster type handling
+    $('input[name="roster-type"]').on('change', function() {
+        const newRosterType = $(this).val();
+        if (newRosterType !== currentRosterType && $('.filled-slot').length > 0) {
+            if (confirm("Changing roster type will clear the current lineup. Are you sure?")) {
+                switchRosterType(newRosterType);
+            } else {
+                $(this).val(currentRosterType);
+                return;
+            }
+        } else {
+            switchRosterType(newRosterType);
+        }
+    });
+
+    function switchRosterType(type) {
+        currentRosterType = type;
+        clearLineup();
+        
+        if (type === 'custom') {
+            // For custom roster, don't fetch from API
+            nbaTeams = {};
+            nbaTeams['Custom Team'] = [];
+            currentTeam = 'Custom Team';
+            updateTeamDropdown();
+            $('#team-dropdown').val('Custom Team');
+            updatePlayerDropdown('Custom Team');
+            $('#add-custom-player').prop('disabled', false);
+        } else {
+            // For NBA roster, fetch teams as normal
+            fetchNBATeams();
+            $('#add-custom-player').prop('disabled', true);
+        }
+    }
 
     function fetchNBATeams() {
         const cachedData = getCachedData('nbaTeams');
@@ -20,39 +55,18 @@ $(document).ready(function() {
             updateTeamDropdown();
             return;
         }
-
-        fetch('https://www.balldontlie.io/api/v1/teams')
+    
+        fetch('nba_teams.json')
             .then(response => response.json())
             .then(data => {
-                const teams = data.data;
-                
-                teams.forEach(team => {
-                    nbaTeams[team.full_name] = [];
-                });
-
-                updateTeamDropdown();
-                fetchPlayersForTeams();
-            })
-            .catch(error => console.error('Error fetching teams:', error));
-    }
-
-    function fetchPlayersForTeams() {
-        const allPlayerRequests = Object.keys(nbaTeams).map(teamName => {
-            return fetch(`https://www.balldontlie.io/api/v1/players?per_page=100&search=${teamName}`)
-                .then(response => response.json())
-                .then(data => {
-                    const players = data.data.filter(player => player.team.full_name === teamName);
-                    nbaTeams[teamName] = players.map(player => `${player.first_name} ${player.last_name}`);
-                });
-        });
-
-        Promise.all(allPlayerRequests)
-            .then(() => {
-                console.log('All rosters fetched:', nbaTeams);
+                nbaTeams = data;
                 setCachedData('nbaTeams', nbaTeams);
                 updateTeamDropdown();
             })
-            .catch(error => console.error('Error fetching players:', error));
+            .catch(error => {
+                console.error('Error fetching teams:', error);
+                alert('Failed to fetch teams. Please try again later.');
+            });
     }
 
     function getCachedData(key) {
@@ -74,37 +88,6 @@ $(document).ready(function() {
         localStorage.setItem(key, JSON.stringify(cacheData));
     }
 
-    // Add roster type handling
-    $('input[name="roster-type"]').on('change', function() {
-        const newRosterType = $(this).val();
-        if (newRosterType !== currentRosterType && $('.filled-slot').length > 0) {
-            if (confirm("Changing roster type will clear the current lineup. Are you sure?")) {
-                clearLineup();
-                switchRosterType(newRosterType);
-            } else {
-                $(this).val(currentRosterType);
-                return;
-            }
-        } else {
-            switchRosterType(newRosterType);
-        }
-    });
-
-    function switchRosterType(type) {
-        currentRosterType = type;
-        if (type === 'nba') {
-            $('#nba-roster-controls').show();
-            $('#custom-roster-controls').hide();
-            $('#save-custom-roster').hide();
-            updateTeamDropdown();
-        } else {
-            $('#nba-roster-controls').hide();
-            $('#custom-roster-controls').show();
-            $('#save-custom-roster').show();
-            updateCustomRosterDropdown();
-        }
-    }
-
     function updateTeamDropdown() {
         const $teamDropdown = $('#team-dropdown');
         $teamDropdown.empty().append($('<option>', {
@@ -117,245 +100,7 @@ $(document).ready(function() {
                 text: team
             }));
         });
-        updatePlayerDropdown(null);
-    }
-
-    function updatePlayerDropdown(team) {
-        const $playerDropdown = $('#player-dropdown');
-        $playerDropdown.empty().append($('<option>', {
-            value: "",
-            text: "Select a player"
-        }));
-        
-        if (team && nbaTeams[team]) {
-            nbaTeams[team].forEach(player => {
-                $playerDropdown.append($('<option>', {
-                    value: player,
-                    text: player
-                }));
-            });
-            $('#action-text').text(`Select a player from ${team}, then click on an empty slot to add them.`);
-            $playerDropdown.prop('disabled', false);
-        } else {
-            $('#action-text').text('Select a team and a player, then click on an empty slot to add them.');
-            $playerDropdown.prop('disabled', true);
-        }
-    }
-
-    // Custom roster handling
-    $('#add-custom-player').on('click', function() {
-        const playerName = $('#new-player-name').val().trim();
-        const teamName = $('#custom-team-name').val().trim();
-
-        if (!teamName) {
-            alert('Please enter a team name first.');
-            return;
-        }
-
-        if (!playerName) {
-            alert('Please enter a player name.');
-            return;
-        }
-
-        if (!customRosters[teamName]) {
-            customRosters[teamName] = [];
-        }
-
-        if (customRosters[teamName].includes(playerName)) {
-            alert('This player is already in the roster.');
-            return;
-        }
-
-        customRosters[teamName].push(playerName);
-        updateCustomRosterDropdown();
-        $('#new-player-name').val('');
-        localStorage.setItem('customRosters', JSON.stringify(customRosters));
-    });
-
-    $('#remove-custom-player').on('click', function() {
-        const playerName = $('#custom-player-dropdown').val();
-        const teamName = $('#custom-team-name').val().trim();
-
-        if (!playerName) {
-            alert('Please select a player to remove.');
-            return;
-        }
-
-        customRosters[teamName] = customRosters[teamName].filter(p => p !== playerName);
-        updateCustomRosterDropdown();
-        localStorage.setItem('customRosters', JSON.stringify(customRosters));
-    });
-
-    function updateCustomRosterDropdown() {
-        const $dropdown = $('#custom-player-dropdown');
-        const teamName = $('#custom-team-name').val().trim();
-        $dropdown.empty().append($('<option>', {
-            value: "",
-            text: "Select a player"
-        }));
-
-        if (teamName && customRosters[teamName]) {
-            customRosters[teamName].forEach(player => {
-                $dropdown.append($('<option>', {
-                    value: player,
-                    text: player
-                }));
-            });
-        }
-    }
-
-    $('#custom-team-name').on('change', function() {
-        const teamName = $(this).val().trim();
-        if (teamName in customRosters) {
-            updateCustomRosterDropdown();
-        } else {
-            customRosters[teamName] = [];
-            updateCustomRosterDropdown();
-        }
-    });
-
-    // Slot and player handling
-    function addSlot(position) {
-        const isOnlySlot = position.find('.slot').length === 0;
-        const newSlot = $(`
-            <div class="slot empty-slot">
-                <span>Empty Slot</span>
-                ${isOnlySlot ? '' : '<button class="remove-slot">Remove</button>'}
-            </div>
-        `);
-        position.append(newSlot);
-    }
-
-    function removeSlot() {
-        const $position = $(this).closest('.position');
-        $(this).closest('.slot').remove();
-        if ($position.find('.slot').length === 0) {
-            addSlot($position);
-        } else if ($position.find('.slot').length === 1) {
-            $position.find('.remove-slot').remove();
-        }
-        updateSummary();
-    }
-
-    function getActivePlayerDropdown() {
-        return currentRosterType === 'nba' ? '#player-dropdown' : '#custom-player-dropdown';
-    }
-
-    function getActiveTeamName() {
-        return currentRosterType === 'nba' ? $('#team-dropdown').val() : $('#custom-team-name').val();
-    }
-
-    $(document).on('click', '.slot', function() {
-        const $slot = $(this);
-        if ($slot.hasClass('filled-slot')) {
-            return;
-        }
-        
-        const selectedPlayer = $(getActivePlayerDropdown()).val();
-        if (!selectedPlayer) {
-            alert('Please select a player first.');
-            return;
-        }
-        const $position = $slot.closest('.position');
-
-        if ($position.find(`.player[data-name="${selectedPlayer}"]`).length > 0) {
-            alert('This player is already in this position.');
-            return;
-        }
-
-        addPlayerToSlot($slot, selectedPlayer);
-    });
-
-    function addPlayerToSlot($slot, playerName) {
-        const $position = $slot.closest('.position');
-        
-        const slider = $('<input type="range" min="0" max="48" value="0">');
-        slider.on('input', function() {
-            updateSliderValue($slot, $(this), playerName);
-        });
-
-        $slot.empty();
-        const playerElement = $(`<div class="player" data-name="${playerName}">${playerName}</div>`);
-        $slot.append(playerElement);
-        $slot.append(slider);
-        $slot.append(`<span class="minutes-display">0 mins</span>`);
-        $slot.append('<button class="remove-slot">Remove</button>');
-        $slot.removeClass('empty-slot').addClass('filled-slot');
-        updateSummary();
-    }
-
-    function updateSliderValue($slot, $slider, playerName) {
-        const minutes = parseInt($slider.val(), 10);
-        const $position = $slot.closest('.position');
-        const playerTotal = calculatePlayerTotal(playerName);
-        const newPlayerTotal = playerTotal - ($slot.data('minutes') || 0) + minutes;
-        const positionTotal = calculatePositionTotal($position);
-
-        if (newPlayerTotal > 48) {
-            $slider.val(48 - (playerTotal - ($slot.data('minutes') || 0)));
-            alert(`${playerName} cannot exceed 48 total minutes.`);
-        } else if (positionTotal - ($slot.data('minutes') || 0) + minutes > 48) {
-            $slider.val(48 - (positionTotal - ($slot.data('minutes') || 0)));
-            alert(`This position cannot exceed 48 total minutes.`);
-        }
-
-        $slot.data('minutes', parseInt($slider.val(), 10));
-        $slot.find('.minutes-display').text(`${$slider.val()} mins`);
-        updateSummary();
-    }
-
-    function calculatePositionTotal($position) {
-        return $position.find('.slot').toArray().reduce((acc, slot) => {
-            return acc + (parseInt($(slot).data('minutes'), 10) || 0);
-        }, 0);
-    }
-
-    function calculatePlayerTotal(playerName) {
-        let total = 0;
-        $('.slot').each(function() {
-            const $slot = $(this);
-            const slotPlayerName = $slot.find('.player').data('name');
-            if (slotPlayerName === playerName) {
-                total += parseInt($slot.data('minutes'), 10) || 0;
-            }
-        });
-        return total;
-    }
-
-    function createSliderSVG(value, max) {
-        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.setAttribute("width", "100");
-        svg.setAttribute("height", "20");
-    
-        const background = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        background.setAttribute("width", "100");
-        background.setAttribute("height", "10");
-        background.setAttribute("fill", "#ddd");
-        background.setAttribute("rx", "5");
-        background.setAttribute("ry", "5");
-        background.setAttribute("y", "5");
-    
-        const fill = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        fill.setAttribute("width", (value / max * 100).toString());
-        fill.setAttribute("height", "10");
-        fill.setAttribute("fill", "#4CAF50");
-        fill.setAttribute("rx", "5");
-        fill.setAttribute("ry", "5");
-        fill.setAttribute("y", "5");
-    
-        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        text.setAttribute("x", "50");
-        text.setAttribute("y", "15");
-        text.setAttribute("text-anchor", "middle");
-        text.setAttribute("fill", "black");
-        text.setAttribute("font-size", "12");
-        text.textContent = `${value} mins`;
-    
-        svg.appendChild(background);
-        svg.appendChild(fill);
-        svg.appendChild(text);
-    
-        return svg;
+        updatePlayerDropdown(null);  // Initially disable the player dropdown
     }
 
     function updateSummary() {
@@ -425,6 +170,7 @@ $(document).ready(function() {
 
         $('#total-minutes').text(`Total Minutes: ${totalMinutes}/240`);
 
+        // Create position legend
         const $legend = $('#position-legend');
         $legend.empty();
         Object.entries(positionColors).forEach(([position, color]) => {
@@ -466,38 +212,128 @@ $(document).ready(function() {
         });
     }
 
-    function clearLineup() {
-        $('.position').each(function() {
-            $(this).find('.slot').not(':first').remove();
-            const $firstSlot = $(this).find('.slot:first');
-            $firstSlot.empty().append('<span>Empty Slot</span>').removeClass('filled-slot').addClass('empty-slot');
-            $firstSlot.data('minutes', 0);
+    function calculatePositionTotal($position) {
+        return $position.find('.slot').toArray().reduce((acc, slot) => {
+            return acc + (parseInt($(slot).data('minutes'), 10) || 0);
+        }, 0);
+    }
+
+    function createSliderSVG(value, max) {
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("width", "100");
+        svg.setAttribute("height", "10");
+
+        const background = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        background.setAttribute("width", "100");
+        background.setAttribute("height", "10");
+        background.setAttribute("fill", "#ecf0f1");
+        background.setAttribute("rx", "5");
+        background.setAttribute("ry", "5");
+
+        const fill = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        fill.setAttribute("width", (value / max * 100).toString());
+        fill.setAttribute("height", "10");
+        fill.setAttribute("fill", "#3498db");
+        fill.setAttribute("rx", "5");
+        fill.setAttribute("ry", "5");
+
+        svg.appendChild(background);
+        svg.appendChild(fill);
+        return svg;
+    }
+
+    function calculatePlayerTotal(playerName) {
+        let total = 0;
+        $('.slot').each(function() {
+            const $slot = $(this);
+            const slotPlayerName = $slot.find('.player').data('name');
+            if (slotPlayerName === playerName) {
+                total += parseInt($slot.data('minutes'), 10) || 0;
+            }
         });
+        return total;
+    }
+
+    function addSlot(position) {
+        const isOnlySlot = position.find('.slot').length === 0;
+        const newSlot = $(`
+            <div class="slot empty-slot">
+                <span>Empty Slot</span>
+                ${isOnlySlot ? '' : '<button class="remove-slot">Remove</button>'}
+            </div>
+        `);
+        position.append(newSlot);
+    }
+
+    function removeSlot() {
+        const $position = $(this).closest('.position');
+        $(this).closest('.slot').remove();
+        if ($position.find('.slot').length === 0) {
+            addSlot($position);
+        } else if ($position.find('.slot').length === 1) {
+            $position.find('.remove-slot').remove();
+        }
         updateSummary();
     }
 
-    $(document).on('change', '#team-dropdown', function() {
-        const selectedTeam = $(this).val();
-        if (selectedTeam !== currentTeam) {
-            if (currentTeam && $('.filled-slot').length > 0) {
-                if (confirm("Changing teams will clear the current lineup. Are you sure?")) {
-                    clearLineup();
-                    currentTeam = selectedTeam;
-                    updatePlayerDropdown(selectedTeam);
-                } else {
-                    $(this).val(currentTeam);
-                    return;
-                }
-            } else {
-                currentTeam = selectedTeam;
-                updatePlayerDropdown(selectedTeam);
-            }
+    $(document).on('click', '.slot', function() {
+        const $slot = $(this);
+        if ($slot.hasClass('filled-slot')) {
+            return; // Do nothing if the slot is already filled
         }
         
-        if (!selectedTeam) {
-            updatePlayerDropdown(null);
+        const selectedPlayer = $('#player-dropdown').val();
+        if (!selectedPlayer) {
+            alert('Please select a player first.');
+            return;
         }
+        const $position = $slot.closest('.position');
+
+        if ($position.find(`.player[data-name="${selectedPlayer}"]`).length > 0) {
+            alert('This player is already in this position.');
+            return;
+        }
+
+        addPlayerToSlot($slot, selectedPlayer);
     });
+
+    function addPlayerToSlot($slot, playerName) {
+        const $position = $slot.closest('.position');
+        
+        const slider = $('<input type="range" min="0" max="48" value="0">');
+        slider.on('input', function() {
+            updateSliderValue($slot, $(this), playerName);
+        });
+
+        $slot.empty();
+        const playerElement = $(`<div class="player" data-name="${playerName}">${playerName}</div>`);
+        $slot.append(playerElement);
+        $slot.append(slider);
+        $slot.append(`<span class="minutes-display">0 mins</span>`);
+        $slot.append('<button class="remove-slot">Remove</button>');
+        $slot.removeClass('empty-slot').addClass('filled-slot');
+        updateSummary();
+    }
+
+    function updateSliderValue($slot, $slider, playerName) {
+        const minutes = parseInt($slider.val(), 10);
+        const $position = $slot.closest('.position');
+        const playerTotal = calculatePlayerTotal(playerName);
+        const newPlayerTotal = playerTotal - ($slot.data('minutes') || 0) + minutes;
+        const positionTotal = calculatePositionTotal($position);
+
+        if (newPlayerTotal > 48) {
+            $slider.val(48 - (playerTotal - ($slot.data('minutes') || 0)));
+            alert(`${playerName} cannot exceed 48 total minutes.`);
+        } else if (positionTotal - ($slot.data('minutes') || 0) + minutes > 48) {
+            $slider.val(48 - (positionTotal - ($slot.data('minutes') || 0)));
+            alert(`This position cannot exceed 48 total minutes.`);
+        }
+
+        $slot.data('minutes', parseInt($slider.val(), 10));
+        $slot.find('.minutes-display').text(`${$slider.val()} mins`);
+        updateSummary();
+    }
 
     $('.positions').on('click', '.add-slot', function() {
         const $position = $(this).closest('.position');
@@ -513,7 +349,7 @@ $(document).ready(function() {
         positions.forEach(position => {
             const newPosition = $(`
                 <div class="position" data-position="${position}">
-<div class="position-header">
+                    <div class="position-header">
                         <h3>${position} <span class="position-minutes">0/48</span></h3>
                         <button class="add-slot">Add Slot</button>
                     </div>
@@ -527,6 +363,87 @@ $(document).ready(function() {
         });
     }
 
+    function clearLineup() {
+        $('.position').each(function() {
+            $(this).find('.slot').not(':first').remove();
+            const $firstSlot = $(this).find('.slot:first');
+            $firstSlot.empty().append('<span>Empty Slot</span>').removeClass('filled-slot').addClass('empty-slot');
+            $firstSlot.data('minutes', 0); // Reset minutes data
+        });
+        updateSummary();
+        updateAddCustomPlayerButton();
+    }
+
+    function addCustomPlayer(teamName, playerName) {
+        if (!customPlayers[teamName]) {
+            customPlayers[teamName] = [];
+        }
+        customPlayers[teamName].push(playerName);
+        updatePlayerDropdown(teamName);
+    }
+
+    function updatePlayerDropdown(team) {
+        const $playerDropdown = $('#player-dropdown');
+        $playerDropdown.empty().append($('<option>', {
+            value: "",
+            text: "Select a player"
+        }));
+        
+        if (team && nbaTeams[team]) {
+            nbaTeams[team].forEach(player => {
+                $playerDropdown.append($('<option>', {
+                    value: player,
+                    text: player
+                }));
+            });
+            // Add custom players
+            if (customPlayers[team]) {
+                customPlayers[team].forEach(player => {
+                    $playerDropdown.append($('<option>', {
+                        value: player,
+                        text: player + ' (Custom)'
+                    }));
+                });
+            }
+            $('#action-text').text(`Select a player from ${team}, then click on an empty slot to add them.`);
+            $playerDropdown.prop('disabled', false);
+        } else {
+            $('#action-text').text('Select a team and a player, then click on an empty slot to add them.');
+            $playerDropdown.prop('disabled', true);
+        }
+        updateAddCustomPlayerButton();
+    }
+
+    function updateAddCustomPlayerButton() {
+        $('#add-custom-player').prop('disabled', !currentTeam);
+    }
+
+    $(document).on('change', '#team-dropdown', function() {
+        const selectedTeam = $(this).val();
+        if (selectedTeam !== currentTeam) {
+            if (currentTeam && $('.filled-slot').length > 0) {
+                if (confirm("Changing teams will clear the current lineup. Are you sure?")) {
+                    clearLineup();
+                    currentTeam = selectedTeam;
+                    updatePlayerDropdown(selectedTeam);
+                } else {
+                    $(this).val(currentTeam);
+                    return;  // Exit the function if the user cancels
+                }
+            } else {
+                currentTeam = selectedTeam;
+                updatePlayerDropdown(selectedTeam);
+            }
+        }
+        
+        // Handle the case when no team is selected
+        if (!selectedTeam) {
+            currentTeam = null;
+            updatePlayerDropdown(null);
+        }
+        updateAddCustomPlayerButton();
+    });
+
     $('#clear-lineup').on('click', function() {
         if (confirm("Are you sure you want to clear the entire lineup?")) {
             clearLineup();
@@ -537,6 +454,7 @@ $(document).ready(function() {
                 text: "Select a player"
             }));
             $('#action-text').text('Select a team and a player, then click on an empty slot to add them.');
+            updateAddCustomPlayerButton();
         }
     });
 
@@ -569,38 +487,82 @@ $(document).ready(function() {
             exportContainer.innerHTML += `<h1 style="text-align: center; margin-bottom: 15px;">${document.querySelector('h1').textContent}</h1>`;
     
             // Add team name
-            const teamName = getActiveTeamName() || 'No Team Selected';
+            const teamName = currentTeam || 'No Team Selected';
             exportContainer.innerHTML += `<h2 style="text-align: center; margin-bottom: 15px; color: #3498db;">${teamName}</h2>`;
     
             // Add positions
-            const positionsClone = document.querySelector('.positions-container').cloneNode(true);
-            positionsClone.style.display = 'flex';
-            positionsClone.style.justifyContent = 'space-between';
-            positionsClone.style.flexWrap = 'nowrap';
-            positionsClone.style.marginBottom = '25px';
-            positionsClone.querySelectorAll('.position').forEach(position => {
-                position.style.width = '260px';
-                position.style.flexShrink = '0';
-                position.style.margin = '0 5px';
-                position.style.padding = '10px';
-                position.style.boxSizing = 'border-box';
-                position.style.border = '1px solid #ccc';
+            const positionsContainer = document.createElement('div');
+            positionsContainer.style.display = 'flex';
+            positionsContainer.style.justifyContent = 'space-between';
+            positionsContainer.style.flexWrap = 'nowrap';
+            positionsContainer.style.marginBottom = '25px';
+            positionsContainer.style.width = '100%';
+    
+            $('.position').each(function() {
+                const positionClone = document.createElement('div');
+                positionClone.style.width = 'calc(20% - 10px)';
+                positionClone.style.flexShrink = '0';
+                positionClone.style.margin = '0 5px';
+                positionClone.style.padding = '10px';
+                positionClone.style.boxSizing = 'border-box';
+                positionClone.style.border = '1px solid #ccc';
+                positionClone.style.borderRadius = '8px';
+                positionClone.style.backgroundColor = '#f8f9fa';
+    
+                const positionHeader = document.createElement('h3');
+                positionHeader.textContent = $(this).find('h3').text();
+                positionHeader.style.marginBottom = '15px';
+                positionHeader.style.color = '#2c3e50';
+                positionHeader.style.borderBottom = '2px solid #3498db';
+                positionHeader.style.paddingBottom = '5px';
+                positionClone.appendChild(positionHeader);
+    
+                $(this).find('.slot').each(function() {
+                    const slotClone = document.createElement('div');
+                    slotClone.style.marginBottom = '15px';
+                    slotClone.style.padding = '8px';
+                    slotClone.style.backgroundColor = 'white';
+                    slotClone.style.borderRadius = '4px';
+                    slotClone.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                    
+                    const playerName = $(this).find('.player').data('name');
+                    if (playerName) {
+                        const nameSpan = document.createElement('span');
+                        nameSpan.textContent = playerName;
+                        nameSpan.style.fontWeight = 'bold';
+                        nameSpan.style.color = '#34495e';
+                        slotClone.appendChild(nameSpan);
+    
+                        const minutes = $(this).data('minutes');
+                        const minutesContainer = document.createElement('div');
+                        minutesContainer.style.marginTop = '5px';
+                        minutesContainer.style.display = 'flex';
+                        minutesContainer.style.alignItems = 'center';
+    
+                        const svg = createSliderSVG(minutes, 48);
+                        svg.style.marginRight = '10px';
+                        minutesContainer.appendChild(svg);
+    
+                        const minutesText = document.createElement('span');
+                        minutesText.textContent = `${minutes} mins`;
+                        minutesText.style.fontWeight = 'bold';
+                        minutesText.style.color = '#2980b9';
+                        minutesContainer.appendChild(minutesText);
+    
+                        slotClone.appendChild(minutesContainer);
+                    } else {
+                        slotClone.textContent = 'Empty Slot';
+                        slotClone.style.color = '#95a5a6';
+                        slotClone.style.fontStyle = 'italic';
+                    }
+    
+                    positionClone.appendChild(slotClone);
+                });
+    
+                positionsContainer.appendChild(positionClone);
             });
-            positionsClone.querySelectorAll('.add-slot, .remove-slot').forEach(el => el.remove());
-            positionsClone.querySelectorAll('.slot').forEach(slot => {
-                const slider = slot.querySelector('input[type="range"]');
-                const minutesDisplay = slot.querySelector('.minutes-display');
-                if (slider) {
-                    const value = slider.value;
-                    const max = slider.max;
-                    const svg = createSliderSVG(value, max);
-                    slot.replaceChild(svg, slider);
-                }
-                if (minutesDisplay) {
-                    minutesDisplay.remove();
-                }
-            });
-            exportContainer.appendChild(positionsClone);
+    
+            exportContainer.appendChild(positionsContainer);
     
             // Add legend
             const legendClone = document.querySelector('#position-legend').cloneNode(true);
@@ -653,9 +615,9 @@ $(document).ready(function() {
     function generateShareableLink() {
         const state = {
             rosterType: currentRosterType,
-            team: getActiveTeamName(),
+            team: currentTeam,
             positions: {},
-            customRoster: currentRosterType === 'custom' ? customRosters[getActiveTeamName()] : null
+            customPlayers: customPlayers[currentTeam] || []
         };
     
         $('.position').each(function() {
@@ -694,23 +656,22 @@ $(document).ready(function() {
             // Set roster type
             currentRosterType = state.rosterType || 'nba';
             $(`input[name="roster-type"][value="${currentRosterType}"]`).prop('checked', true);
-            switchRosterType(currentRosterType);
-
-            // Load custom roster if applicable
-            if (state.rosterType === 'custom' && state.customRoster) {
-                customRosters[state.team] = state.customRoster;
-                $('#custom-team-name').val(state.team);
-                updateCustomRosterDropdown();
+            
+            if (currentRosterType === 'custom') {
+                nbaTeams = {};
+                nbaTeams['Custom Team'] = [];
             }
-
-            // Load NBA team if applicable
-            if (state.rosterType === 'nba') {
-                currentTeam = state.team;
-                $('#team-dropdown').val(currentTeam);
-                updatePlayerDropdown(currentTeam);
+            
+            currentTeam = state.team;
+            $('#team-dropdown').val(currentTeam);
+            
+            // Load custom players
+            if (state.customPlayers) {
+                customPlayers[currentTeam] = state.customPlayers;
             }
-
-            clearLineup();
+            
+            updatePlayerDropdown(currentTeam);
+            clearLineup(); // Clear existing lineup before loading new state
 
             // Load positions
             Object.entries(state.positions).forEach(([position, players]) => {
@@ -730,8 +691,29 @@ $(document).ready(function() {
             });
 
             updateSummary();
+            updateAddCustomPlayerButton();
         }
     }
+
+    // Add custom player modal functionality
+    $('#add-custom-player').on('click', function() {
+        $('#custom-player-modal').css('display', 'block');
+    });
+
+    $('#close-modal').on('click', function() {
+        $('#custom-player-modal').css('display', 'none');
+    });
+
+    $('#save-custom-player').on('click', function() {
+        const customPlayerName = $('#custom-player-name').val().trim();
+        if (customPlayerName && currentTeam) {
+            addCustomPlayer(currentTeam, customPlayerName);
+            $('#custom-player-modal').css('display', 'none');
+            $('#custom-player-name').val('');
+        } else {
+            alert('Please enter a player name and select a team.');
+        }
+    });
 
     initPositions();
     fetchNBATeams();

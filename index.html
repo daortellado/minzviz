@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+<!-- Keep head section the same -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,9 +20,9 @@
     <div class="container">
         <h1>minzVIZ</h1>
         <h2 id="the-basketball-minutes-distribution-visualizer" class="subtitle">The Basketball Minutes Distribution Visualizer</h2>
-
         <div class="roster">
             <h2>Roster</h2>
+            <!-- Add roster type selector -->
             <div class="roster-type-selector">
                 <label>
                     <input type="radio" name="roster-type" value="nba" checked>
@@ -32,34 +33,24 @@
                     Custom Roster
                 </label>
             </div>
-            
-            <div id="nba-roster-controls">
-                <select id="team-dropdown">
-                    <option value="">Select a team</option>
-                </select>
-                <select id="player-dropdown">
-                    <option value="">Select a player</option>
-                </select>
-            </div>
-
-            <div id="custom-roster-controls" style="display: none;">
-                <div class="custom-roster-input">
-                    <input type="text" id="custom-team-name" placeholder="Enter team name">
-                    <input type="text" id="new-player-name" placeholder="Enter player name">
-                    <button id="add-custom-player">Add Player</button>
-                </div>
-                <div class="custom-roster-list">
-                    <h3>Custom Roster</h3>
-                    <select id="custom-player-dropdown">
-                        <option value="">Select a player</option>
-                    </select>
-                    <button id="remove-custom-player">Remove Selected Player</button>
-                </div>
-            </div>
-
-            <div id="action-text" class="action-text">Select a player from the dropdown, then click on an empty slot to add them.</div>
+            <select id="team-dropdown">
+                <option value="">Select a team</option>
+            </select>
+            <select id="player-dropdown">
+                <option value="">Select a player</option>
+            </select>
+            <button id="add-custom-player" disabled>Add Custom Player</button>
+            <div id="action-text" class="action-text">Select a team and a player, then click on an empty slot to add them.</div>
         </div>
-
+        <div id="custom-player-modal" class="modal">
+            <div class="modal-content">
+              <h3>Add Custom Player</h3>
+              <input type="text" id="custom-player-name" placeholder="Enter player name">
+              <button id="save-custom-player">Add Player</button>
+              <button id="close-modal">Cancel</button>
+            </div>
+        </div>
+        <!-- Keep the rest of the HTML the same -->
         <div class="positions">
             <h2>Positions</h2>
             <div id="total-minutes"></div>
@@ -69,7 +60,6 @@
             <button id="clear-lineup">Clear Lineup</button>
             <button id="export-image">Export as Image</button>
             <button id="generate-link">Generate Shareable Link</button>
-            <button id="save-custom-roster" style="display: none;">Save Custom Roster</button>
         </div>
         <div class="summary">
             <h2>Summary</h2>
