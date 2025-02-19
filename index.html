@@ -22,26 +22,41 @@
 
         <div class="roster">
             <h2>Roster</h2>
-            <select id="team-dropdown">
-                <option value="">Select a team</option>
-            </select>
-            <select id="player-dropdown">
-                <option value="">Select a player</option>
-                <option value="Player A">Player A</option>
-                <option value="Player B">Player B</option>
-                <option value="Player C">Player C</option>
-                <option value="Player D">Player D</option>
-                <option value="Player E">Player E</option>
-                <option value="Player F">Player F</option>
-                <option value="Player G">Player G</option>
-                <option value="Player H">Player H</option>
-                <option value="Player I">Player I</option>
-                <option value="Player J">Player J</option>
-                <option value="Player K">Player K</option>
-                <option value="Player L">Player L</option>
-                <option value="Player M">Player M</option>
-                <option value="Player N">Player N</option>
-            </select>
+            <div class="roster-type-selector">
+                <label>
+                    <input type="radio" name="roster-type" value="nba" checked>
+                    NBA Rosters
+                </label>
+                <label>
+                    <input type="radio" name="roster-type" value="custom">
+                    Custom Roster
+                </label>
+            </div>
+            
+            <div id="nba-roster-controls">
+                <select id="team-dropdown">
+                    <option value="">Select a team</option>
+                </select>
+                <select id="player-dropdown">
+                    <option value="">Select a player</option>
+                </select>
+            </div>
+
+            <div id="custom-roster-controls" style="display: none;">
+                <div class="custom-roster-input">
+                    <input type="text" id="custom-team-name" placeholder="Enter team name">
+                    <input type="text" id="new-player-name" placeholder="Enter player name">
+                    <button id="add-custom-player">Add Player</button>
+                </div>
+                <div class="custom-roster-list">
+                    <h3>Custom Roster</h3>
+                    <select id="custom-player-dropdown">
+                        <option value="">Select a player</option>
+                    </select>
+                    <button id="remove-custom-player">Remove Selected Player</button>
+                </div>
+            </div>
+
             <div id="action-text" class="action-text">Select a player from the dropdown, then click on an empty slot to add them.</div>
         </div>
 
@@ -54,6 +69,7 @@
             <button id="clear-lineup">Clear Lineup</button>
             <button id="export-image">Export as Image</button>
             <button id="generate-link">Generate Shareable Link</button>
+            <button id="save-custom-roster" style="display: none;">Save Custom Roster</button>
         </div>
         <div class="summary">
             <h2>Summary</h2>
@@ -62,8 +78,8 @@
         </div>
     </div>
     <script src="script.js"></script>
-<footer>
-    <p>&copy; Kenavoga 2024</p>
-</footer>
+    <footer>
+        <p>&copy; Kenavoga 2024</p>
+    </footer>
 </body>
 </html>

@@ -9,7 +9,9 @@ $(document).ready(function() {
 
     let nbaTeams = {};
     let currentTeam = null;
-    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    let customRosters = JSON.parse(localStorage.getItem('customRosters') || '{}');
+    let currentRosterType = 'nba';
+    const CACHE_DURATION = 24 * 60 * 60 * 1000;
 
     function fetchNBATeams() {
         const cachedData = getCachedData('nbaTeams');
@@ -48,7 +50,7 @@ $(document).ready(function() {
             .then(() => {
                 console.log('All rosters fetched:', nbaTeams);
                 setCachedData('nbaTeams', nbaTeams);
-                updateTeamDropdown(); // Update dropdown after fetching players
+                updateTeamDropdown();
             })
             .catch(error => console.error('Error fetching players:', error));
     }
@@ -72,6 +74,37 @@ $(document).ready(function() {
         localStorage.setItem(key, JSON.stringify(cacheData));
     }
 
+    // Add roster type handling
+    $('input[name="roster-type"]').on('change', function() {
+        const newRosterType = $(this).val();
+        if (newRosterType !== currentRosterType && $('.filled-slot').length > 0) {
+            if (confirm("Changing roster type will clear the current lineup. Are you sure?")) {
+                clearLineup();
+                switchRosterType(newRosterType);
+            } else {
+                $(this).val(currentRosterType);
+                return;
+            }
+        } else {
+            switchRosterType(newRosterType);
+        }
+    });
+
+    function switchRosterType(type) {
+        currentRosterType = type;
+        if (type === 'nba') {
+            $('#nba-roster-controls').show();
+            $('#custom-roster-controls').hide();
+            $('#save-custom-roster').hide();
+            updateTeamDropdown();
+        } else {
+            $('#nba-roster-controls').hide();
+            $('#custom-roster-controls').show();
+            $('#save-custom-roster').show();
+            updateCustomRosterDropdown();
+        }
+    }
+
     function updateTeamDropdown() {
         const $teamDropdown = $('#team-dropdown');
         $teamDropdown.empty().append($('<option>', {
@@ -84,7 +117,245 @@ $(document).ready(function() {
                 text: team
             }));
         });
-        updatePlayerDropdown(null);  // Initially disable the player dropdown
+        updatePlayerDropdown(null);
+    }
+
+    function updatePlayerDropdown(team) {
+        const $playerDropdown = $('#player-dropdown');
+        $playerDropdown.empty().append($('<option>', {
+            value: "",
+            text: "Select a player"
+        }));
+        
+        if (team && nbaTeams[team]) {
+            nbaTeams[team].forEach(player => {
+                $playerDropdown.append($('<option>', {
+                    value: player,
+                    text: player
+                }));
+            });
+            $('#action-text').text(`Select a player from ${team}, then click on an empty slot to add them.`);
+            $playerDropdown.prop('disabled', false);
+        } else {
+            $('#action-text').text('Select a team and a player, then click on an empty slot to add them.');
+            $playerDropdown.prop('disabled', true);
+        }
+    }
+
+    // Custom roster handling
+    $('#add-custom-player').on('click', function() {
+        const playerName = $('#new-player-name').val().trim();
+        const teamName = $('#custom-team-name').val().trim();
+
+        if (!teamName) {
+            alert('Please enter a team name first.');
+            return;
+        }
+
+        if (!playerName) {
+            alert('Please enter a player name.');
+            return;
+        }
+
+        if (!customRosters[teamName]) {
+            customRosters[teamName] = [];
+        }
+
+        if (customRosters[teamName].includes(playerName)) {
+            alert('This player is already in the roster.');
+            return;
+        }
+
+        customRosters[teamName].push(playerName);
+        updateCustomRosterDropdown();
+        $('#new-player-name').val('');
+        localStorage.setItem('customRosters', JSON.stringify(customRosters));
+    });
+
+    $('#remove-custom-player').on('click', function() {
+        const playerName = $('#custom-player-dropdown').val();
+        const teamName = $('#custom-team-name').val().trim();
+
+        if (!playerName) {
+            alert('Please select a player to remove.');
+            return;
+        }
+
+        customRosters[teamName] = customRosters[teamName].filter(p => p !== playerName);
+        updateCustomRosterDropdown();
+        localStorage.setItem('customRosters', JSON.stringify(customRosters));
+    });
+
+    function updateCustomRosterDropdown() {
+        const $dropdown = $('#custom-player-dropdown');
+        const teamName = $('#custom-team-name').val().trim();
+        $dropdown.empty().append($('<option>', {
+            value: "",
+            text: "Select a player"
+        }));
+
+        if (teamName && customRosters[teamName]) {
+            customRosters[teamName].forEach(player => {
+                $dropdown.append($('<option>', {
+                    value: player,
+                    text: player
+                }));
+            });
+        }
+    }
+
+    $('#custom-team-name').on('change', function() {
+        const teamName = $(this).val().trim();
+        if (teamName in customRosters) {
+            updateCustomRosterDropdown();
+        } else {
+            customRosters[teamName] = [];
+            updateCustomRosterDropdown();
+        }
+    });
+
+    // Slot and player handling
+    function addSlot(position) {
+        const isOnlySlot = position.find('.slot').length === 0;
+        const newSlot = $(`
+            <div class="slot empty-slot">
+                <span>Empty Slot</span>
+                ${isOnlySlot ? '' : '<button class="remove-slot">Remove</button>'}
+            </div>
+        `);
+        position.append(newSlot);
+    }
+
+    function removeSlot() {
+        const $position = $(this).closest('.position');
+        $(this).closest('.slot').remove();
+        if ($position.find('.slot').length === 0) {
+            addSlot($position);
+        } else if ($position.find('.slot').length === 1) {
+            $position.find('.remove-slot').remove();
+        }
+        updateSummary();
+    }
+
+    function getActivePlayerDropdown() {
+        return currentRosterType === 'nba' ? '#player-dropdown' : '#custom-player-dropdown';
+    }
+
+    function getActiveTeamName() {
+        return currentRosterType === 'nba' ? $('#team-dropdown').val() : $('#custom-team-name').val();
+    }
+
+    $(document).on('click', '.slot', function() {
+        const $slot = $(this);
+        if ($slot.hasClass('filled-slot')) {
+            return;
+        }
+        
+        const selectedPlayer = $(getActivePlayerDropdown()).val();
+        if (!selectedPlayer) {
+            alert('Please select a player first.');
+            return;
+        }
+        const $position = $slot.closest('.position');
+
+        if ($position.find(`.player[data-name="${selectedPlayer}"]`).length > 0) {
+            alert('This player is already in this position.');
+            return;
+        }
+
+        addPlayerToSlot($slot, selectedPlayer);
+    });
+
+    function addPlayerToSlot($slot, playerName) {
+        const $position = $slot.closest('.position');
+        
+        const slider = $('<input type="range" min="0" max="48" value="0">');
+        slider.on('input', function() {
+            updateSliderValue($slot, $(this), playerName);
+        });
+
+        $slot.empty();
+        const playerElement = $(`<div class="player" data-name="${playerName}">${playerName}</div>`);
+        $slot.append(playerElement);
+        $slot.append(slider);
+        $slot.append(`<span class="minutes-display">0 mins</span>`);
+        $slot.append('<button class="remove-slot">Remove</button>');
+        $slot.removeClass('empty-slot').addClass('filled-slot');
+        updateSummary();
+    }
+
+    function updateSliderValue($slot, $slider, playerName) {
+        const minutes = parseInt($slider.val(), 10);
+        const $position = $slot.closest('.position');
+        const playerTotal = calculatePlayerTotal(playerName);
+        const newPlayerTotal = playerTotal - ($slot.data('minutes') || 0) + minutes;
+        const positionTotal = calculatePositionTotal($position);
+
+        if (newPlayerTotal > 48) {
+            $slider.val(48 - (playerTotal - ($slot.data('minutes') || 0)));
+            alert(`${playerName} cannot exceed 48 total minutes.`);
+        } else if (positionTotal - ($slot.data('minutes') || 0) + minutes > 48) {
+            $slider.val(48 - (positionTotal - ($slot.data('minutes') || 0)));
+            alert(`This position cannot exceed 48 total minutes.`);
+        }
+
+        $slot.data('minutes', parseInt($slider.val(), 10));
+        $slot.find('.minutes-display').text(`${$slider.val()} mins`);
+        updateSummary();
+    }
+
+    function calculatePositionTotal($position) {
+        return $position.find('.slot').toArray().reduce((acc, slot) => {
+            return acc + (parseInt($(slot).data('minutes'), 10) || 0);
+        }, 0);
+    }
+
+    function calculatePlayerTotal(playerName) {
+        let total = 0;
+        $('.slot').each(function() {
+            const $slot = $(this);
+            const slotPlayerName = $slot.find('.player').data('name');
+            if (slotPlayerName === playerName) {
+                total += parseInt($slot.data('minutes'), 10) || 0;
+            }
+        });
+        return total;
+    }
+
+    function createSliderSVG(value, max) {
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("width", "100");
+        svg.setAttribute("height", "20");
+    
+        const background = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        background.setAttribute("width", "100");
+        background.setAttribute("height", "10");
+        background.setAttribute("fill", "#ddd");
+        background.setAttribute("rx", "5");
+        background.setAttribute("ry", "5");
+        background.setAttribute("y", "5");
+    
+        const fill = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        fill.setAttribute("width", (value / max * 100).toString());
+        fill.setAttribute("height", "10");
+        fill.setAttribute("fill", "#4CAF50");
+        fill.setAttribute("rx", "5");
+        fill.setAttribute("ry", "5");
+        fill.setAttribute("y", "5");
+    
+        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.setAttribute("x", "50");
+        text.setAttribute("y", "15");
+        text.setAttribute("text-anchor", "middle");
+        text.setAttribute("fill", "black");
+        text.setAttribute("font-size", "12");
+        text.textContent = `${value} mins`;
+    
+        svg.appendChild(background);
+        svg.appendChild(fill);
+        svg.appendChild(text);
+    
+        return svg;
     }
 
     function updateSummary() {
@@ -154,7 +425,6 @@ $(document).ready(function() {
 
         $('#total-minutes').text(`Total Minutes: ${totalMinutes}/240`);
 
-        // Create position legend
         const $legend = $('#position-legend');
         $legend.empty();
         Object.entries(positionColors).forEach(([position, color]) => {
@@ -196,140 +466,38 @@ $(document).ready(function() {
         });
     }
 
-    function calculatePositionTotal($position) {
-        return $position.find('.slot').toArray().reduce((acc, slot) => {
-            return acc + (parseInt($(slot).data('minutes'), 10) || 0);
-        }, 0);
+    function clearLineup() {
+        $('.position').each(function() {
+            $(this).find('.slot').not(':first').remove();
+            const $firstSlot = $(this).find('.slot:first');
+            $firstSlot.empty().append('<span>Empty Slot</span>').removeClass('filled-slot').addClass('empty-slot');
+            $firstSlot.data('minutes', 0);
+        });
+        updateSummary();
     }
 
-    function createSliderSVG(value, max) {
-        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.setAttribute("width", "100");
-        svg.setAttribute("height", "20");
-    
-        const background = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        background.setAttribute("width", "100");
-        background.setAttribute("height", "10");
-        background.setAttribute("fill", "#ddd");
-        background.setAttribute("rx", "5");
-        background.setAttribute("ry", "5");
-        background.setAttribute("y", "5");
-    
-        const fill = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        fill.setAttribute("width", (value / max * 100).toString());
-        fill.setAttribute("height", "10");
-        fill.setAttribute("fill", "#4CAF50");
-        fill.setAttribute("rx", "5");
-        fill.setAttribute("ry", "5");
-        fill.setAttribute("y", "5");
-    
-        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        text.setAttribute("x", "50");
-        text.setAttribute("y", "15");
-        text.setAttribute("text-anchor", "middle");
-        text.setAttribute("fill", "black");
-        text.setAttribute("font-size", "12");
-        text.textContent = `${value} mins`;
-    
-        svg.appendChild(background);
-        svg.appendChild(fill);
-        svg.appendChild(text);
-    
-        return svg;
-    }
-
-    function calculatePlayerTotal(playerName) {
-        let total = 0;
-        $('.slot').each(function() {
-            const $slot = $(this);
-            const slotPlayerName = $slot.find('.player').data('name');
-            if (slotPlayerName === playerName) {
-                total += parseInt($slot.data('minutes'), 10) || 0;
+    $(document).on('change', '#team-dropdown', function() {
+        const selectedTeam = $(this).val();
+        if (selectedTeam !== currentTeam) {
+            if (currentTeam && $('.filled-slot').length > 0) {
+                if (confirm("Changing teams will clear the current lineup. Are you sure?")) {
+                    clearLineup();
+                    currentTeam = selectedTeam;
+                    updatePlayerDropdown(selectedTeam);
+                } else {
+                    $(this).val(currentTeam);
+                    return;
+                }
+            } else {
+                currentTeam = selectedTeam;
+                updatePlayerDropdown(selectedTeam);
             }
-        });
-        return total;
-    }
-
-    function addSlot(position) {
-        const isOnlySlot = position.find('.slot').length === 0;
-        const newSlot = $(`
-            <div class="slot empty-slot">
-                <span>Empty Slot</span>
-                ${isOnlySlot ? '' : '<button class="remove-slot">Remove</button>'}
-            </div>
-        `);
-        position.append(newSlot);
-    }
-
-    function removeSlot() {
-        const $position = $(this).closest('.position');
-        $(this).closest('.slot').remove();
-        if ($position.find('.slot').length === 0) {
-            addSlot($position);
-        } else if ($position.find('.slot').length === 1) {
-            $position.find('.remove-slot').remove();
-        }
-        updateSummary();
-    }
-
-    $(document).on('click', '.slot', function() {
-        const $slot = $(this);
-        if ($slot.hasClass('filled-slot')) {
-            return; // Do nothing if the slot is already filled
         }
         
-        const selectedPlayer = $('#player-dropdown').val();
-        if (!selectedPlayer) {
-            alert('Please select a player first.');
-            return;
+        if (!selectedTeam) {
+            updatePlayerDropdown(null);
         }
-        const $position = $slot.closest('.position');
-
-        if ($position.find(`.player[data-name="${selectedPlayer}"]`).length > 0) {
-            alert('This player is already in this position.');
-            return;
-        }
-
-        addPlayerToSlot($slot, selectedPlayer);
     });
-
-    function addPlayerToSlot($slot, playerName) {
-        const $position = $slot.closest('.position');
-        
-        const slider = $('<input type="range" min="0" max="48" value="0">');
-        slider.on('input', function() {
-            updateSliderValue($slot, $(this), playerName);
-        });
-
-        $slot.empty();
-        const playerElement = $(`<div class="player" data-name="${playerName}">${playerName}</div>`);
-        $slot.append(playerElement);
-        $slot.append(slider);
-        $slot.append(`<span class="minutes-display">0 mins</span>`);
-        $slot.append('<button class="remove-slot">Remove</button>');
-        $slot.removeClass('empty-slot').addClass('filled-slot');
-        updateSummary();
-    }
-
-    function updateSliderValue($slot, $slider, playerName) {
-        const minutes = parseInt($slider.val(), 10);
-        const $position = $slot.closest('.position');
-        const playerTotal = calculatePlayerTotal(playerName);
-        const newPlayerTotal = playerTotal - ($slot.data('minutes') || 0) + minutes;
-        const positionTotal = calculatePositionTotal($position);
-
-        if (newPlayerTotal > 48) {
-            $slider.val(48 - (playerTotal - ($slot.data('minutes') || 0)));
-            alert(`${playerName} cannot exceed 48 total minutes.`);
-        } else if (positionTotal - ($slot.data('minutes') || 0) + minutes > 48) {
-            $slider.val(48 - (positionTotal - ($slot.data('minutes') || 0)));
-            alert(`This position cannot exceed 48 total minutes.`);
-        }
-
-        $slot.data('minutes', parseInt($slider.val(), 10));
-        $slot.find('.minutes-display').text(`${$slider.val()} mins`);
-        updateSummary();
-    }
 
     $('.positions').on('click', '.add-slot', function() {
         const $position = $(this).closest('.position');
@@ -345,7 +513,7 @@ $(document).ready(function() {
         positions.forEach(position => {
             const newPosition = $(`
                 <div class="position" data-position="${position}">
-                    <div class="position-header">
+<div class="position-header">
                         <h3>${position} <span class="position-minutes">0/48</span></h3>
                         <button class="add-slot">Add Slot</button>
                     </div>
@@ -358,62 +526,6 @@ $(document).ready(function() {
             $positionsContainer.append(newPosition);
         });
     }
-
-    function clearLineup() {
-        $('.position').each(function() {
-            $(this).find('.slot').not(':first').remove();
-            const $firstSlot = $(this).find('.slot:first');
-            $firstSlot.empty().append('<span>Empty Slot</span>').removeClass('filled-slot').addClass('empty-slot');
-            $firstSlot.data('minutes', 0); // Reset minutes data
-        });
-        updateSummary();
-    }
-
-    function updatePlayerDropdown(team) {
-        const $playerDropdown = $('#player-dropdown');
-        $playerDropdown.empty().append($('<option>', {
-            value: "",
-            text: "Select a player"
-        }));
-        
-        if (team && nbaTeams[team]) {
-            nbaTeams[team].forEach(player => {
-                $playerDropdown.append($('<option>', {
-                    value: player,
-                    text: player
-                }));
-            });
-            $('#action-text').text(`Select a player from ${team}, then click on an empty slot to add them.`);
-            $playerDropdown.prop('disabled', false);
-        } else {
-            $('#action-text').text('Select a team and a player, then click on an empty slot to add them.');
-            $playerDropdown.prop('disabled', true);
-        }
-    }
-
-    $(document).on('change', '#team-dropdown', function() {
-        const selectedTeam = $(this).val();
-        if (selectedTeam !== currentTeam) {
-            if (currentTeam && $('.filled-slot').length > 0) {
-                if (confirm("Changing teams will clear the current lineup. Are you sure?")) {
-                    clearLineup();
-                    currentTeam = selectedTeam;
-                    updatePlayerDropdown(selectedTeam);
-                } else {
-                    $(this).val(currentTeam);
-                    return;  // Exit the function if the user cancels
-                }
-            } else {
-                currentTeam = selectedTeam;
-                updatePlayerDropdown(selectedTeam);
-            }
-        }
-        
-        // Handle the case when no team is selected
-        if (!selectedTeam) {
-            updatePlayerDropdown(null);
-        }
-    });
 
     $('#clear-lineup').on('click', function() {
         if (confirm("Are you sure you want to clear the entire lineup?")) {
@@ -457,7 +569,7 @@ $(document).ready(function() {
             exportContainer.innerHTML += `<h1 style="text-align: center; margin-bottom: 15px;">${document.querySelector('h1').textContent}</h1>`;
     
             // Add team name
-            const teamName = $('#team-dropdown').val() || 'No Team Selected';
+            const teamName = getActiveTeamName() || 'No Team Selected';
             exportContainer.innerHTML += `<h2 style="text-align: center; margin-bottom: 15px; color: #3498db;">${teamName}</h2>`;
     
             // Add positions
@@ -540,8 +652,10 @@ $(document).ready(function() {
 
     function generateShareableLink() {
         const state = {
-            team: currentTeam,
-            positions: {}
+            rosterType: currentRosterType,
+            team: getActiveTeamName(),
+            positions: {},
+            customRoster: currentRosterType === 'custom' ? customRosters[getActiveTeamName()] : null
         };
     
         $('.position').each(function() {
@@ -560,7 +674,6 @@ $(document).ready(function() {
         const encodedState = encodeURIComponent(stateString);
         const shareableLink = `${window.location.origin}${window.location.pathname}?state=${encodedState}`;
         
-        // Copy to clipboard
         navigator.clipboard.writeText(shareableLink).then(function() {
             alert("Shareable link has been copied to your clipboard!");
         }, function(err) {
@@ -577,13 +690,29 @@ $(document).ready(function() {
         const stateParam = urlParams.get('state');
         if (stateParam) {
             const state = JSON.parse(decodeURIComponent(stateParam));
-            // Load the state into your application
-            currentTeam = state.team;
-            $('#team-dropdown').val(currentTeam);
-            updatePlayerDropdown(currentTeam);
+            
+            // Set roster type
+            currentRosterType = state.rosterType || 'nba';
+            $(`input[name="roster-type"][value="${currentRosterType}"]`).prop('checked', true);
+            switchRosterType(currentRosterType);
 
-            clearLineup(); // Clear existing lineup before loading new state
+            // Load custom roster if applicable
+            if (state.rosterType === 'custom' && state.customRoster) {
+                customRosters[state.team] = state.customRoster;
+                $('#custom-team-name').val(state.team);
+                updateCustomRosterDropdown();
+            }
 
+            // Load NBA team if applicable
+            if (state.rosterType === 'nba') {
+                currentTeam = state.team;
+                $('#team-dropdown').val(currentTeam);
+                updatePlayerDropdown(currentTeam);
+            }
+
+            clearLineup();
+
+            // Load positions
             Object.entries(state.positions).forEach(([position, players]) => {
                 const $position = $(`.position[data-position="${position}"]`);
                 players.forEach((player, index) => {
@@ -605,7 +734,7 @@ $(document).ready(function() {
     }
 
     initPositions();
-    fetchNBATeams();  // Start by fetching teams and players
+    fetchNBATeams();
     updateSummary();
     loadStateFromURL();
 });
