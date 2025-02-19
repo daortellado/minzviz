@@ -1,12 +1,4 @@
-body {
-    font-family: 'Arial', sans-serif;
-    margin: 0;
-    padding: 20px;
-    background-color: #f0f0f0;
-    color: #333;
-}
-
-/* New styles for roster selection */
+/* Roster type selector styles */
 .roster-type-selector {
     margin-bottom: 20px;
     text-align: center;
@@ -15,55 +7,36 @@ body {
 .roster-type-selector label {
     margin: 0 15px;
     cursor: pointer;
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 4px;
+    background-color: #f7f7f7;
+    transition: all 0.3s ease;
+}
+
+.roster-type-selector label:hover {
+    background-color: #e8e8e8;
 }
 
 .roster-type-selector input[type="radio"] {
     margin-right: 5px;
+    vertical-align: middle;
 }
 
-.custom-roster-input {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 20px;
+.roster-type-selector input[type="radio"]:checked + label {
+    background-color: #3498db;
+    color: white;
 }
 
-.custom-roster-input input[type="text"] {
-    width: 200px;
-    padding: 10px;
-    border: 2px solid #3498db;
-    border-radius: 5px;
-    font-size: 16px;
+/* Main styles */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f0f0;
+    color: #333;
 }
 
-.custom-roster-list {
-    text-align: center;
-    margin-top: 20px;
-}
-
-.custom-roster-list h3 {
-    color: #3498db;
-    margin-bottom: 10px;
-}
-
-#remove-custom-player {
-    background-color: #e74c3c;
-    margin-top: 10px;
-}
-
-#remove-custom-player:hover {
-    background-color: #c0392b;
-}
-
-#save-custom-roster {
-    background-color: #2ecc71;
-}
-
-#save-custom-roster:hover {
-    background-color: #27ae60;
-}
-
-/* Existing styles */
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -114,7 +87,7 @@ h2 {
     margin-bottom: 20px;
 }
 
-#player-dropdown, #custom-player-dropdown {
+#player-dropdown, #team-dropdown {
     width: 200px;
     padding: 10px;
     margin-bottom: 15px;
@@ -128,13 +101,13 @@ h2 {
 }
 
 #player-dropdown:hover, #player-dropdown:focus,
-#custom-player-dropdown:hover, #custom-player-dropdown:focus {
+#team-dropdown:hover, #team-dropdown:focus {
     border-color: #2980b9;
     box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
 }
 
 #player-dropdown option,
-#custom-player-dropdown option {
+#team-dropdown option {
     padding: 10px;
 }
 
@@ -511,6 +484,12 @@ button:disabled {
     .export-container .player-summary {
         width: 100% !important;
         max-width: none !important;
+    }
+
+    .roster-type-selector label {
+        display: block;
+        margin: 10px auto;
+        width: 200px;
     }
 }
 
